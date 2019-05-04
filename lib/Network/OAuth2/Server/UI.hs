@@ -38,7 +38,7 @@ import           Data.Time.Locale.Compat
 import           Network.OAuth2.Server.Types
 import           Prelude                          hiding (head)
 import           Text.Blaze.Html5                 (toHtml, wbr)
-import           URI.ByteString                   (serializeURI)
+import           URI.ByteString                   (serializeURIRef)
 import           Yesod.Core
 
 import           Network.OAuth2.Server.Foundation
@@ -47,7 +47,7 @@ import           Network.OAuth2.Server.Foundation
 renderAuthorizePage :: RequestCode -> ClientDetails -> Widget
 renderAuthorizePage RequestCode{..} ClientDetails{..} = do
     setTitle "Review token request"
-    let app_url = T.decodeUtf8 (toByteString (serializeURI clientAppUrl))
+    let app_url = T.decodeUtf8 (toByteString (serializeURIRef clientAppUrl))
     let maybe_permission_list = fmap (T.decodeUtf8 . review scopeToken) . S.toList . review scope <$> requestCodeScope
     [whamlet|
         <div class="ui raised blue segment top attached">

@@ -68,7 +68,7 @@ Library
                      , Network.Wai.Middleware.Shibboleth
   other-modules:       Paths_oauth2_server
   build-depends:
-                       base >=4.7 && <4.9
+                       base 
                      , aeson
                      , async
                      , attoparsec

@@ -12,7 +12,6 @@ module Network.OAuth2.Server.Foundation where
 
 import           Blaze.ByteString.Builder
 import           Control.Concurrent.STM
-import           Data.Monoid
 import qualified Data.Text.Encoding as T
 import           Language.Haskell.TH
 import           Network.Wai
@@ -67,7 +66,7 @@ do let routes = [parseRoutes|
 
 instance Yesod OAuth2Server where
     approot = ApprootMaster $ \OAuth2Server{serverOptions=ServerOptions{..}} ->
-        maybe "" (T.decodeUtf8 . toByteString . serializeURI) optServiceAppRoot
+        maybe "" (T.decodeUtf8 . toByteString . serializeURIRef) optServiceAppRoot
 
     errorHandler = defaultErrorHandler
 

@@ -57,6 +57,7 @@ import           Network.OAuth2.Server.Types      as X
 import           System.Log.Logger
 import           Text.Blaze.Html5                 (Html)
 import           Yesod.Core                       (PathPiece (..),
+                                                   getYesod,
                                                    defaultLayout, invalidArgs,
                                                    lookupGetParam,
                                                    lookupPostParam,
@@ -92,7 +93,7 @@ handleBaseR = redirect TokensR
 -- | Display a given token, if the user is allowed to do so.
 getShowTokenR :: TokenID -> Handler Html
 getShowTokenR tid = do
-    OAuth2Server{serverTokenStore=ref} <- ask
+    OAuth2Server{serverTokenStore=ref} <- getYesod
     (uid, sc) <- checkShibHeaders
     debugLog logName $ "Got a request to display a token from " <> T.pack (show uid)
     res <- liftIO $ storeReadToken ref (Right tid)
@@ -107,7 +108,7 @@ getShowTokenR tid = do
 -- | List all tokens for a given user, paginated.
 getTokensR :: Handler Html
 getTokensR = do
-    OAuth2Server{serverTokenStore=ref,serverOptions=serverOpts} <- ask
+    OAuth2Server{serverTokenStore=ref,serverOptions=serverOpts} <- getYesod
     (u, s) <- checkShibHeaders
     maybe_p <- lookupGetParam "page"
     let p = preview page =<< fmap fst . readInt . T.encodeUtf8 =<< maybe_p
@@ -130,7 +131,7 @@ postTokensR = do
 -- | Revoke a given token
 deleteTokensR :: Handler Html
 deleteTokensR = do
-    OAuth2Server{serverTokenStore=ref} <- ask
+    OAuth2Server{serverTokenStore=ref} <- getYesod
     (user_id, _) <- checkShibHeaders
     maybe_token_id <- lookupPostParam "token_id"
     token_id <- case maybe_token_id of
@@ -164,7 +165,7 @@ deleteTokensR = do
 -- | Create a new token
 createTokensR :: Handler Html
 createTokensR = do
-    OAuth2Server{serverTokenStore=ref} <- ask
+    OAuth2Server{serverTokenStore=ref} <- getYesod
     (user_id, user_scope) <- checkShibHeaders
     scopes <- lookupPostParams "scope"
     let processScope x = case (T.encodeUtf8 x) ^? scopeToken of
@@ -191,7 +192,7 @@ createTokensR = do
 -- | Exercises the database to check if everyting is alive.
 handleHealthCheckR :: Handler ()
 handleHealthCheckR = do
-    OAuth2Server{serverTokenStore=ref} <- ask
+    OAuth2Server{serverTokenStore=ref} <- getYesod
     debugLog logName $ "Got a healthcheck request."
     StoreStats{..} <- liftIO $ storeGatherStats ref
     return ()

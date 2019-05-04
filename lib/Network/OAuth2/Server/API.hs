@@ -42,7 +42,6 @@ module Network.OAuth2.Server.API (
     checkClientAuth,
     checkShibHeaders,
 ) where
-
 import           Control.Applicative
 import           Control.Lens
 import           Control.Monad
@@ -72,11 +71,6 @@ import           Network.OAuth2.Server.Store      hiding (logName)
 import           Network.OAuth2.Server.UI
 
 
--- | Temporary, until there is an instance in Yesod.
-instance MonadHandler m => MonadHandler (ExceptT e m) where
-    type HandlerSite (ExceptT e m) = HandlerSite m
-    liftHandlerT = lift . liftHandlerT
-
 -- Logging
 
 logName :: String
@@ -96,9 +90,9 @@ wrapLogger logger component msg = do
 -- $ The OAuth2 Server API uses HTTP headers to exchange information between
 -- system components and to control caching behaviour.
 
-checkShibHeaders :: (MonadHandler m, MonadReader OAuth2Server m) => m (UserID, Scope)
-checkShibHeaders = do
-    OAuth2Server{serverOptions=ServerOptions{..}} <- ask
+checkShibHeaders ::  Handler (UserID, Scope)
+checkShibHeaders =  do
+    OAuth2Server{serverOptions=ServerOptions{..}} <- getYesod
     uh' <- lookupHeader optUserHeader
     uid <- case preview userID =<< uh' of
         Nothing -> error "Shibboleth User header missing"
@@ -130,7 +124,7 @@ checkShibHeaders = do
 -- for, and should not be caught.
 postTokenEndpointR :: Handler Value
 postTokenEndpointR = wrapError $ do
-    OAuth2Server{serverTokenStore=ref} <- ask
+    OAuth2Server{serverTokenStore=ref} <- getYesod
 
     -- Lookup client credentials
     auth_header_t <- lookupHeader "Authorization"
@@ -262,9 +256,10 @@ postTokenEndpointR = wrapError $ do
 -- shifting them out of here entirely.
 getAuthorizeEndpointR
     :: Handler Html
-getAuthorizeEndpointR = wrapError $ do
-    OAuth2Server{serverTokenStore=ref} <- ask
-    (user_id, permissions) <- checkShibHeaders
+getAuthorizeEndpointR = do  
+  (user_id, permissions) <- checkShibHeaders 
+  wrapError $ do
+    OAuth2Server{serverTokenStore=ref} <- getYesod  
     scope' <- (fromPathPiece =<<) <$> lookupGetParam "scope"
     client_state <- (fromPathPiece =<<) <$> lookupGetParam "state"
 
@@ -339,7 +334,7 @@ getAuthorizeEndpointR = wrapError $ do
 postAuthorizeEndpointR
     :: Handler ()
 postAuthorizeEndpointR = do
-    OAuth2Server{serverTokenStore=ref} <- ask
+    OAuth2Server{serverTokenStore=ref} <- getYesod
     (user_id, _) <- checkShibHeaders
     code' <- do
         res <- (preview code . T.encodeUtf8 =<<) <$> lookupPostParam "code"
@@ -382,7 +377,7 @@ postAuthorizeEndpointR = do
 postVerifyEndpointR
     :: Handler Value
 postVerifyEndpointR = wrapError $ do
-    OAuth2Server{serverTokenStore=ref} <- ask
+    OAuth2Server{serverTokenStore=ref} <- getYesod
     auth_header_t <- lookupHeader "Authorization"
         `orElseM` invalidRequest "AuthHeader missing"
     auth <- preview authHeader auth_header_t

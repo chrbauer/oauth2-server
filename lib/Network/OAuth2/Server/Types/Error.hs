@@ -239,15 +239,17 @@ instance FromJSON ErrorDescription where
 -- invalidRequest msg = throwError $ OAuth2Error InvalidRequest
 --                                               (Just $ msg ^?! errorDescription)
 --                                               Nothing
-do TyConI (DataD _ _ _ cs _) <- reify ''ErrorCode
+
+
+do TyConI (DataD _ _ _ _ cs _) <- reify ''ErrorCode
    res <- forM cs $ \(NormalC c []) -> do
        let (h:t) = nameBase c
            c' = toLower h : t
        n <- newName c'
-       ty <- sigD n [t|MonadError OAuth2Error m => ByteString -> m a|]
+       ty <- sigD n [t|forall m. forall a. MonadError OAuth2Error m => ByteString -> m a|]
        let b = [e|(\msg -> throwError $ OAuth2Error $(pure $ ConE c)
                                                     (Just $ msg ^?! errorDescription)
                                                     Nothing)|]
        d <- valD (varP n) (normalB b) []
-       return [ty,d]
+       return [ty, d]
    return $ concat res
