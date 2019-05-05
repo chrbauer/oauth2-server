@@ -54,10 +54,10 @@ import           Database.PostgreSQL.Simple.ToField
 import           Network.HTTP.Types.Header            as HTTP
 import           URI.ByteString                       (URI, parseURI,
                                                        queryPairsL,
-                                                       serializeURI,
+                                                       serializeURIRef,
                                                        strictURIParserOptions,
                                                        uriFragmentL,
-                                                       uriQueryL)
+                                                       queryL)
 import           Yesod.Core                           (PathPiece (..))
 
 --------------------------------------------------------------------------------
@@ -111,7 +111,7 @@ newtype RedirectURI = RedirectURI { unRedirectURI :: URI }
 -- | Helper function to safely add query parameters without having to use the
 --   exposed prism to convert to and from Bytestrings and RedirectURIs
 addQueryParameters :: RedirectURI -> [(ByteString, ByteString)] -> RedirectURI
-addQueryParameters (RedirectURI uri) params = RedirectURI $ uri & uriQueryL . queryPairsL %~ (<> params)
+addQueryParameters (RedirectURI uri) params = RedirectURI $ uri & queryL . queryPairsL %~ (<> params)
 
 -- | Redirect URIs must be absolute and have no fragment as defined at:
 --
@@ -122,7 +122,7 @@ redirectURI :: Prism' ByteString RedirectURI
 redirectURI = prism' fromRedirect toRedirect
   where
     fromRedirect :: RedirectURI -> ByteString
-    fromRedirect = toByteString . serializeURI . unRedirectURI
+    fromRedirect = toByteString . serializeURIRef . unRedirectURI
 
     toRedirect :: ByteString -> Maybe RedirectURI
     toRedirect bs = case parseURI strictURIParserOptions bs of
@@ -167,7 +167,7 @@ fromFieldURI f bs = do
 -- Similar to the one used in the ToField instance for RedirectURI but
 -- allowing URI fragments.
 uriToBS :: URI -> ByteString
-uriToBS = toByteString . serializeURI
+uriToBS = toByteString . serializeURIRef
 
 --------------------------------------------------------------------------------
 
@@ -175,7 +175,7 @@ uriToBS = toByteString . serializeURI
 
 -- | Convert a URI to an Aeson Value
 uriToJSON :: URI -> Value
-uriToJSON = toJSON . T.decodeUtf8 . toByteString . serializeURI
+uriToJSON = toJSON . T.decodeUtf8 . uriToBS
 
 -- | Parse a URI from an Aeson Value
 uriFromJSON :: Value -> Aeson.Parser URI

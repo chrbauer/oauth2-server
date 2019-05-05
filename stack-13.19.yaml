@@ -1,5 +1,6 @@
 flags: {}
 packages:
 - '.'
-
+extra-deps:
+- hspec-webdriver-1.2.0
 resolver: lts-13.19
